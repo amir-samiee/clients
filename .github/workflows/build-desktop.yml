@@ -425,22 +425,8 @@ jobs:
           _APPX_PUBLISHER: ${{ steps.cert-subject.outputs.publisher }}
         run: ./scripts/validate-appx-signatures.ps1 -Config electron-builder.json -SignedPublisher $env:_APPX_PUBLISHER
 
-      - name: Package for Chocolatey
-        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
-        env:
-          _ARTIFACT_PREFIX: ${{ matrix.artifact_prefix }}
-        run: |
-          Copy-Item -Path ./stores/chocolatey -Destination ./dist/chocolatey -Recurse
-          Copy-Item -Path ./dist/Bitwarden-Installer-$env:_PACKAGE_VERSION.exe `
-          -Destination ./dist/chocolatey
-
-          $checksum = (Get-FileHash -Algorithm SHA256 ./dist/chocolatey/Bitwarden-Installer-$env:_PACKAGE_VERSION.exe).Hash.ToLower()
-          $chocoInstall = "./dist/chocolatey/tools/chocolateyinstall.ps1"
-          (Get-Content $chocoInstall).replace('__version__', "$env:_PACKAGE_VERSION").replace('__checksum__', $checksum).replace('__artifact_prefix__', "$env:_ARTIFACT_PREFIX") | Set-Content $chocoInstall
-          choco pack ./dist/chocolatey/bitwarden.nuspec --version "$env:_PACKAGE_VERSION" --out ./dist/chocolatey
-
       - name: Fix NSIS artifact names for auto-updater
-        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         run: |
           Rename-Item -Path .\dist\nsis-web\Bitwarden-$env:_PACKAGE_VERSION-x64.nsis.7z `
             -NewName bitwarden-$env:_PACKAGE_VERSION-x64.nsis.7z
@@ -456,7 +442,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload appx x64 artifact
-        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ matrix.artifact_prefix }}Bitwarden-${{ env._PACKAGE_VERSION }}-x64.appx
@@ -464,7 +450,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload store appx x64 artifact
-        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ matrix.artifact_prefix }}Bitwarden-${{ env._PACKAGE_VERSION }}-x64-store.appx
@@ -472,7 +458,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload NSIS x64 artifact
-        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ matrix.artifact_prefix }}bitwarden-${{ env._PACKAGE_VERSION }}-x64.nsis.7z
@@ -488,7 +474,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload store appx ARM64 artifact
-        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ matrix.artifact_prefix }}Bitwarden-${{ env._PACKAGE_VERSION }}-arm64-store.appx
@@ -496,7 +482,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload NSIS ARM64 artifact
-        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ matrix.artifact_prefix }}bitwarden-${{ env._PACKAGE_VERSION }}-arm64.nsis.7z
@@ -504,7 +490,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload nupkg artifact
-        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ matrix.artifact_prefix }}bitwarden.${{ env._PACKAGE_VERSION }}.nupkg
