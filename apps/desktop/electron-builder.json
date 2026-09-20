@@ -94,7 +94,7 @@
   },
   "win": {
     "electronUpdaterCompatibility": ">=0.0.1",
-    "target": ["portable", "nsis-web", "appx"],
+    "target": ["portable", "nsis", "appx"],
     "signExts": [".dll", ".node"],
     "signtoolOptions": {
       "sign": "./sign.js",
@@ -185,7 +185,7 @@
     },
     "provisioningProfile": "bitwarden_stable_desktop_appstore.provisionprofile"
   },
-  "nsisWeb": {
+  "nsis": {
     "oneClick": false,
     "perMachine": false,
     "allowToChangeInstallationDirectory": false,

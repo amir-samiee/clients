@@ -431,7 +431,7 @@ jobs:
           _ARTIFACT_PREFIX: ${{ matrix.artifact_prefix }}
         run: |
           Copy-Item -Path ./stores/chocolatey -Destination ./dist/chocolatey -Recurse
-          Copy-Item -Path ./dist/nsis-web/Bitwarden-Installer-$env:_PACKAGE_VERSION.exe `
+          Copy-Item -Path ./dist/Bitwarden-Installer-$env:_PACKAGE_VERSION.exe `
           -Destination ./dist/chocolatey
 
           $checksum = (Get-FileHash -Algorithm SHA256 ./dist/chocolatey/Bitwarden-Installer-$env:_PACKAGE_VERSION.exe).Hash.ToLower()
@@ -444,7 +444,7 @@ jobs:
         run: |
           Rename-Item -Path .\dist\nsis-web\Bitwarden-$env:_PACKAGE_VERSION-x64.nsis.7z `
             -NewName bitwarden-$env:_PACKAGE_VERSION-x64.nsis.7z
-          Rename-Item -Path .\dist\nsis-web\Bitwarden-$env:_PACKAGE_VERSION-arm64.nsis.7z `
+          Rename-Item -Path .\dist\Bitwarden-$env:_PACKAGE_VERSION-arm64.nsis.7z `
             -NewName bitwarden-$env:_PACKAGE_VERSION-arm64.nsis.7z
 
       - name: Upload installer exe artifact
