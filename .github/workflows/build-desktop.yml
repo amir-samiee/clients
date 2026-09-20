@@ -303,7 +303,7 @@ jobs:
         if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         run: |
           Copy-Item -Path ./stores/chocolatey -Destination ./dist/chocolatey -Recurse
-          Copy-Item -Path ./dist/nsis-web/Bitwarden-Installer-$env:_PACKAGE_VERSION.exe `
+          Copy-Item -Path ./dist/Bitwarden-Installer-$env:_PACKAGE_VERSION.exe `
           -Destination ./dist/chocolatey
 
           $checksum = (Get-FileHash -Algorithm SHA256 ./dist/chocolatey/Bitwarden-Installer-$env:_PACKAGE_VERSION.exe).Hash.ToLower()
@@ -314,11 +314,11 @@ jobs:
       - name: Fix NSIS artifact names for auto-updater
         if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         run: |
-          Rename-Item -Path .\dist\nsis-web\Bitwarden-$env:_PACKAGE_VERSION-ia32.nsis.7z `
+          Rename-Item -Path .\dist\Bitwarden-$env:_PACKAGE_VERSION-ia32.nsis.7z `
             -NewName bitwarden-$env:_PACKAGE_VERSION-ia32.nsis.7z
-          Rename-Item -Path .\dist\nsis-web\Bitwarden-$env:_PACKAGE_VERSION-x64.nsis.7z `
+          Rename-Item -Path .\dist\Bitwarden-$env:_PACKAGE_VERSION-x64.nsis.7z `
             -NewName bitwarden-$env:_PACKAGE_VERSION-x64.nsis.7z
-          Rename-Item -Path .\dist\nsis-web\Bitwarden-$env:_PACKAGE_VERSION-arm64.nsis.7z `
+          Rename-Item -Path .\dist\Bitwarden-$env:_PACKAGE_VERSION-arm64.nsis.7z `
             -NewName bitwarden-$env:_PACKAGE_VERSION-arm64.nsis.7z
 
       - name: Upload installer exe artifact
@@ -326,7 +326,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Bitwarden-Installer-${{ env._PACKAGE_VERSION }}.exe
-          path: apps/desktop/dist/nsis-web/Bitwarden-Installer-${{ env._PACKAGE_VERSION }}.exe
+          path: apps/desktop/dist/Bitwarden-Installer-${{ env._PACKAGE_VERSION }}.exe
           if-no-files-found: error
 
       - name: Upload appx ia32 artifact
@@ -350,7 +350,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: bitwarden-${{ env._PACKAGE_VERSION }}-ia32.nsis.7z
-          path: apps/desktop/dist/nsis-web/bitwarden-${{ env._PACKAGE_VERSION }}-ia32.nsis.7z
+          path: apps/desktop/dist/bitwarden-${{ env._PACKAGE_VERSION }}-ia32.nsis.7z
           if-no-files-found: error
 
       - name: Upload appx x64 artifact
@@ -374,7 +374,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: bitwarden-${{ env._PACKAGE_VERSION }}-x64.nsis.7z
-          path: apps/desktop/dist/nsis-web/bitwarden-${{ env._PACKAGE_VERSION }}-x64.nsis.7z
+          path: apps/desktop/dist/bitwarden-${{ env._PACKAGE_VERSION }}-x64.nsis.7z
           if-no-files-found: error
 
       - name: Upload appx ARM64 artifact
@@ -398,7 +398,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: bitwarden-${{ env._PACKAGE_VERSION }}-arm64.nsis.7z
-          path: apps/desktop/dist/nsis-web/bitwarden-${{ env._PACKAGE_VERSION }}-arm64.nsis.7z
+          path: apps/desktop/dist/bitwarden-${{ env._PACKAGE_VERSION }}-arm64.nsis.7z
           if-no-files-found: error
 
       - name: Upload nupkg artifact
@@ -414,7 +414,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ needs.setup.outputs.release_channel }}.yml
-          path: apps/desktop/dist/nsis-web/${{ needs.setup.outputs.release_channel }}.yml
+          path: apps/desktop/dist/${{ needs.setup.outputs.release_channel }}.yml
           if-no-files-found: error
 
   browser-build:
