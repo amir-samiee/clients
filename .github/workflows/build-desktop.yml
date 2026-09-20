@@ -205,30 +205,6 @@ jobs:
           choco --version
           rustup show
 
-      - name: Log in to Azure
-        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
-        uses: bitwarden/gh-actions/azure-login@main
-        with:
-          subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          tenant_id: ${{ secrets.AZURE_TENANT_ID }}
-          client_id: ${{ secrets.AZURE_CLIENT_ID }}
-
-      - name: Retrieve secrets
-        id: retrieve-secrets
-        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
-        uses: bitwarden/gh-actions/get-keyvault-secrets@main
-        with:
-          keyvault: "bitwarden-ci"
-          secrets: "code-signing-vault-url,
-            code-signing-client-id,
-            code-signing-tenant-id,
-            code-signing-client-secret,
-            code-signing-cert-name"
-
-      - name: Log out from Azure
-        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
-        uses: bitwarden/gh-actions/azure-logout@main
-
       - name: Install Node dependencies
         run: npm ci
         working-directory: ./
@@ -299,20 +275,8 @@ jobs:
           Copy-Item "./dist/Bitwarden-$env:_PACKAGE_VERSION-arm64.appx" `
             -Destination "./dist/Bitwarden-$env:_PACKAGE_VERSION-arm64-store.appx"
 
-      - name: Package for Chocolatey
-        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
-        run: |
-          Copy-Item -Path ./stores/chocolatey -Destination ./dist/chocolatey -Recurse
-          Copy-Item -Path ./dist/Bitwarden-Installer-$env:_PACKAGE_VERSION.exe `
-          -Destination ./dist/chocolatey
-
-          $checksum = (Get-FileHash -Algorithm SHA256 ./dist/chocolatey/Bitwarden-Installer-$env:_PACKAGE_VERSION.exe).Hash.ToLower()
-          $chocoInstall = "./dist/chocolatey/tools/chocolateyinstall.ps1"
-          (Get-Content $chocoInstall).replace('__version__', "$env:_PACKAGE_VERSION").replace('__checksum__', $checksum) | Set-Content $chocoInstall
-          choco pack ./dist/chocolatey/bitwarden.nuspec --version "$env:_PACKAGE_VERSION" --out ./dist/chocolatey
-
       - name: Fix NSIS artifact names for auto-updater
-        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         run: |
           Rename-Item -Path .\dist\Bitwarden-$env:_PACKAGE_VERSION-ia32.nsis.7z `
             -NewName bitwarden-$env:_PACKAGE_VERSION-ia32.nsis.7z
@@ -330,7 +294,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload appx ia32 artifact
-        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Bitwarden-${{ env._PACKAGE_VERSION }}-ia32.appx
@@ -338,7 +302,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload store appx ia32 artifact
-        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Bitwarden-${{ env._PACKAGE_VERSION }}-ia32-store.appx
@@ -346,7 +310,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload NSIS ia32 artifact
-        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: bitwarden-${{ env._PACKAGE_VERSION }}-ia32.nsis.7z
@@ -354,7 +318,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload appx x64 artifact
-        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Bitwarden-${{ env._PACKAGE_VERSION }}-x64.appx
@@ -362,7 +326,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload store appx x64 artifact
-        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Bitwarden-${{ env._PACKAGE_VERSION }}-x64-store.appx
@@ -370,7 +334,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload NSIS x64 artifact
-        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: bitwarden-${{ env._PACKAGE_VERSION }}-x64.nsis.7z
@@ -386,7 +350,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload store appx ARM64 artifact
-        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Bitwarden-${{ env._PACKAGE_VERSION }}-arm64-store.appx
@@ -394,7 +358,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload NSIS ARM64 artifact
-        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: bitwarden-${{ env._PACKAGE_VERSION }}-arm64.nsis.7z
@@ -402,7 +366,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload nupkg artifact
-        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: bitwarden.${{ env._PACKAGE_VERSION }}.nupkg
