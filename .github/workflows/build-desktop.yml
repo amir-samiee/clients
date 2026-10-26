@@ -5,6 +5,8 @@
 name: Build Desktop
 
 on:
+  workflow_call:
+    inputs: {}
   workflow_dispatch:
     inputs:
       sdk_branch:
@@ -14,7 +16,7 @@ on:
       testflight_distribute:
         description: "Force distribute to TestFlight regardless of branch (useful for QA testing on feature branches)"
         type: boolean
-        default: true
+        default: false
 
 defaults:
   run:
@@ -194,8 +196,8 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          cache: "npm"
-          cache-dependency-path: "**/package-lock.json"
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
           node-version: ${{ env._NODE_VERSION }}
 
       - name: Cache Rust dependencies
@@ -339,7 +341,7 @@ jobs:
           npm run pack:win
 
       - name: Pack & Sign
-        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         env:
           ELECTRON_BUILDER_SIGN: 0
           SIGNING_VAULT_URL: ${{ steps.retrieve-secrets.outputs.CODE-SIGNING-VAULT-URL }}
@@ -355,7 +357,7 @@ jobs:
       # The Appx built above keeps the Microsoft-assigned publisher and stays unsigned,
       # which is what the Store requires.
       - name: Rename appx files for store
-        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         run: |
           Rename-Item -Path "./dist/Bitwarden-$env:_PACKAGE_VERSION-x64.appx" `
             -NewName "Bitwarden-$env:_PACKAGE_VERSION-x64-store.appx"
@@ -425,12 +427,14 @@ jobs:
           _APPX_PUBLISHER: ${{ steps.cert-subject.outputs.publisher }}
         run: ./scripts/validate-appx-signatures.ps1 -Config electron-builder.json -SignedPublisher $env:_APPX_PUBLISHER
 
-      - name: Fix NSIS artifact names for auto-updater
-        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+      - name: Package for Chocolatey
+        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        env:
+          _ARTIFACT_PREFIX: ${{ matrix.artifact_prefix }}
         run: |
           Rename-Item -Path .\dist\nsis-web\Bitwarden-$env:_PACKAGE_VERSION-x64.nsis.7z `
             -NewName bitwarden-$env:_PACKAGE_VERSION-x64.nsis.7z
-          Rename-Item -Path .\dist\Bitwarden-$env:_PACKAGE_VERSION-arm64.nsis.7z `
+          Rename-Item -Path .\dist\nsis-web\Bitwarden-$env:_PACKAGE_VERSION-arm64.nsis.7z `
             -NewName bitwarden-$env:_PACKAGE_VERSION-arm64.nsis.7z
 
       - name: Upload installer exe artifact
@@ -442,7 +446,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload appx x64 artifact
-        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ matrix.artifact_prefix }}Bitwarden-${{ env._PACKAGE_VERSION }}-x64.appx
@@ -450,7 +454,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload store appx x64 artifact
-        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ matrix.artifact_prefix }}Bitwarden-${{ env._PACKAGE_VERSION }}-x64-store.appx
@@ -458,7 +462,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload NSIS x64 artifact
-        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ matrix.artifact_prefix }}bitwarden-${{ env._PACKAGE_VERSION }}-x64.nsis.7z
@@ -474,7 +478,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload store appx ARM64 artifact
-        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ matrix.artifact_prefix }}Bitwarden-${{ env._PACKAGE_VERSION }}-arm64-store.appx
@@ -482,7 +486,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload NSIS ARM64 artifact
-        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ matrix.artifact_prefix }}bitwarden-${{ env._PACKAGE_VERSION }}-arm64.nsis.7z
@@ -490,7 +494,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload nupkg artifact
-        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ matrix.artifact_prefix }}bitwarden.${{ env._PACKAGE_VERSION }}.nupkg
@@ -498,7 +502,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload auto-update artifact
-        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ matrix.artifact_prefix }}${{ needs.setup.outputs.release_channel }}.yml
