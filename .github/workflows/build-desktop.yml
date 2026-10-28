@@ -438,7 +438,7 @@ jobs:
             -NewName bitwarden-$env:_PACKAGE_VERSION-arm64.nsis.7z
 
       - name: Upload installer exe artifact
-        # if: ${{ needs.setup.outputs.has_secrets == 'true' }}
+        if: ${{ needs.setup.outputs.has_secrets == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ matrix.artifact_prefix }}Bitwarden-Installer-${{ env._PACKAGE_VERSION }}.exe
