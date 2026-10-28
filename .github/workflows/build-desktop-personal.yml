@@ -1,9 +1,4 @@
-# This workflow will run in the context of the source of the PR.
-# On a PR from a fork, the workflow will not have access to secrets, and so any parts of the build that require secrets will not run.
-# If additional artifacts are needed for a fork PR, review it and add the "ci:signed-build" label to run "build-desktop-target.yml".
-
-name: Build Desktop
-
+name: Build Desktop (Personal)
 on:
   workflow_call:
     inputs: {}
@@ -17,14 +12,11 @@ on:
         description: "Force distribute to TestFlight regardless of branch (useful for QA testing on feature branches)"
         type: boolean
         default: false
-
 defaults:
   run:
     shell: bash
-
 permissions:
   contents: read
-
 jobs:
   electron-verify:
     name: Verify Electron Version
@@ -36,12 +28,10 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
           allow-unsafe-pr-checkout: true
-
       - name: Verify
         run: |
           PACKAGE_VERSION=$(jq -r .devDependencies.electron package.json)
           ELECTRON_BUILDER_VERSION=$(jq -r .electronVersion ./apps/desktop/electron-builder.json)
-
           if [[ "$PACKAGE_VERSION" == "$ELECTRON_BUILDER_VERSION"  ]]; then
             echo "Versions matches"
           else
@@ -73,44 +63,33 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
           allow-unsafe-pr-checkout: true
-
       - name: Get Package Version
         id: retrieve-version
         run: |
           PKG_VERSION=$(jq -r .version src/package.json)
           echo "Setting version number to $PKG_VERSION"
           echo "package_version=$PKG_VERSION" >> "$GITHUB_OUTPUT"
-
-          # beta-release.json holds the beta ordinal, which is bumped on rc for a
-          # second beta off the same base version. electron-updater only serves a beta
-          # that out-ranks the installed one.
           BETA_NUMBER=$(jq -r '.betaNumber' beta-release.json)
           if [[ ! "$BETA_NUMBER" =~ ^[0-9]+$ ]]; then
             echo "[!] Invalid beta ordinal '$BETA_NUMBER'; expected a positive integer"
             exit 1
           fi
-
           BETA_PKG_VERSION="$PKG_VERSION-beta.$BETA_NUMBER"
           echo "Setting beta version number to $BETA_PKG_VERSION"
           echo "beta_number=$BETA_NUMBER" >> "$GITHUB_OUTPUT"
           echo "beta_package_version=$BETA_PKG_VERSION" >> "$GITHUB_OUTPUT"
-
-          # Whether this beta cycle publishes the Windows Store appx. Checked by
-          # windows-beta-store-check, which is where the reasoning lives.
           MS_STORE_IN_SCOPE=$(jq -r '.msStoreInScope' beta-release.json)
           if [[ "$MS_STORE_IN_SCOPE" != "true" && "$MS_STORE_IN_SCOPE" != "false" ]]; then
             echo "[!] Invalid msStoreInScope '$MS_STORE_IN_SCOPE'; expected true or false"
             exit 1
           fi
           echo "ms_store_in_scope=$MS_STORE_IN_SCOPE" >> "$GITHUB_OUTPUT"
-
       - name: Increment Version
         id: increment-version
         run: |
           BUILD_NUMBER=$((3000 + GITHUB_RUN_NUMBER))
           echo "Setting build number to $BUILD_NUMBER"
           echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
-
       - name: Get Version Channel
         id: release-channel
         env:
@@ -129,7 +108,6 @@ jobs:
               echo "channel=latest" >> "$GITHUB_OUTPUT"
               ;;
           esac
-
       - name: Check if special branches exist
         id: branch-check
         run: |
@@ -138,13 +116,11 @@ jobs:
           else
             echo "rc_branch_exists=0" >> "$GITHUB_OUTPUT"
           fi
-
           if [[ $(git ls-remote --heads origin hotfix-rc-desktop) ]]; then
             echo "hotfix_branch_exists=1" >> "$GITHUB_OUTPUT"
           else
             echo "hotfix_branch_exists=0" >> "$GITHUB_OUTPUT"
           fi
-
       - name: Get Node Version
         id: retrieve-node-version
         working-directory: ./
@@ -152,7 +128,6 @@ jobs:
           NODE_NVMRC=$(cat .nvmrc)
           NODE_VERSION=${NODE_NVMRC/v/''}
           echo "node_version=$NODE_VERSION" >> "$GITHUB_OUTPUT"
-
       - name: Check secrets
         id: check-secrets
         run: |
@@ -160,14 +135,19 @@ jobs:
           echo "has_secrets=$has_secrets" >> "$GITHUB_OUTPUT"
 
   windows:
-    name: Windows Build [${{ matrix.variant }}]
+    name: Windows Build [${{ matrix.channel }}]
     strategy:
       fail-fast: false
       matrix:
         include:
-          - variant: oss
-            license_type: oss
-            artifact_prefix: ""
+          - channel: latest
+            package_version: ${{ needs.setup.outputs.package_version }}
+            pack_target: pack:win
+            artifact_name: exes
+          - channel: beta
+            package_version: ${{ needs.setup.outputs.beta_package_version }}
+            pack_target: pack:win:beta
+            artifact_name: exes-beta
     runs-on: windows-2022
     needs:
       - setup
@@ -179,7 +159,7 @@ jobs:
         shell: pwsh
         working-directory: apps/desktop
     env:
-      _PACKAGE_VERSION: ${{ needs.setup.outputs.package_version }}
+      _PACKAGE_VERSION: ${{ matrix.package_version }}
       _NODE_VERSION: ${{ needs.setup.outputs.node_version }}
       NODE_OPTIONS: --max_old_space_size=4096
     steps:
@@ -189,25 +169,21 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
           allow-unsafe-pr-checkout: true
-
       - name: Set up Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           cache: "npm"
           cache-dependency-path: "**/package-lock.json"
           node-version: ${{ env._NODE_VERSION }}
-
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2.8.2
         with:
           workspaces: |
             apps/desktop/desktop_native -> target
           cache-targets: "true"
-
       - name: Install Node dependencies
         run: npm ci
         working-directory: ./
-
       - name: Cache Native Module
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: cache
@@ -216,49 +192,20 @@ jobs:
             apps/desktop/desktop_native/napi/*.node
             apps/desktop/desktop_native/dist/*
           key: rust-${{ runner.os }}-${{ hashFiles('apps/desktop/desktop_native/**/*', 'package-lock.json') }}
-
       - name: Build Native Module
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: apps/desktop/desktop_native
         env:
           MODE: ${{ github.event_name == 'workflow_call' && '--release' || '' }}
         run: node build.js cross-platform "$env:MODE"
-
       - name: Build
-        run: npm run build:${{ matrix.variant }}
-
+        run: npm run build:${{ matrix.channel == 'beta' && 'oss' || 'oss' }}
       - name: Pack
-        run: npm run pack:win
-
-      - name: Tree
-        run: tree
-
+        env:
+          BETA_PACKAGE_VERSION: ${{ matrix.channel == 'beta' && env._PACKAGE_VERSION || '' }}
+        run: npm run ${{ matrix.pack_target }}
       - name: Upload exe artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: exes
+          name: ${{ matrix.artifact_name }}
           path: apps/desktop/dist/*.exe
-
-      # - name: Upload portable exe artifact
-      #   uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-      #   with:
-      #     name: ${{ matrix.artifact_prefix }}Bitwarden-Portable-${{ env._PACKAGE_VERSION }}.exe
-      #     path: apps/desktop/dist/Bitwarden-Portable-${{ env._PACKAGE_VERSION }}.exe
-
-      # - name: Upload installer exe artifact
-      #   uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-      #   with:
-      #     name: ${{ matrix.artifact_prefix }}Bitwarden-Installer-${{ env._PACKAGE_VERSION }}.exe
-      #     path: apps/desktop/dist/nsis-web/Bitwarden-Installer-${{ env._PACKAGE_VERSION }}.exe
-
-      # - name: Upload NSIS x64 artifact
-      #   uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-      #   with:
-      #     name: ${{ matrix.artifact_prefix }}bitwarden-${{ env._PACKAGE_VERSION }}-x64.nsis.7z
-      #     path: apps/desktop/dist/nsis-web/bitwarden-${{ env._PACKAGE_VERSION }}-x64.nsis.7z
-
-      # - name: Upload auto-update artifact
-      #   uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-      #   with:
-      #     name: ${{ matrix.artifact_prefix }}${{ needs.setup.outputs.release_channel }}.yml
-      #     path: apps/desktop/dist/nsis-web/${{ needs.setup.outputs.release_channel }}.yml
